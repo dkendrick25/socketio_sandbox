@@ -1,0 +1,14 @@
+{
+  "name": "socketio_sandbox",
+  "version": "1.0.0",
+  "description": "my first sockiet.io app",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "deeann",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "^1.4.8"
+  }
+}
