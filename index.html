@@ -11,24 +11,84 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      .join, .leave { color: gray; }
+      .handle { color: orange; font-weight: bold; }
     </style>
   </head>
   <body>
     <ul id="messages"></ul>
+    <div id="typing-indicator">
+      <span class="username"></span>
+      is typing...
+    </div>
     <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      <input id="m" autocomplete="off"/><button>Send</button>
     </form>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-      var socket = io();
+      // io establishes socket connection with server
+      // you will use socket to send messages and receive messages
+
+
+
+      var username = prompt('Username:');
+      var serverSocket = io();
+
+      var isTyping = false;
+      var lastIsTyping = false;
+      $('#m').keypress(function() {
+        isTyping = true;
+        setTimeout(function() {
+          isTyping = false;
+        }, 1000);
+      });
+
+      setInterval(function() {
+        if (lastIsTyping !== isTyping) {
+          if (isTyping) {
+            serverSocket.emit('start-type', username);
+          } else {
+            serverSocket.emit('end-type', username);
+          }
+        }
+        lastIsTyping = isTyping;
+      }, 250);
+
+      serverSocket.emit('client-join', username);
       $('form').submit(function(){
-        socket.emit('chat message', $('#m').val());
+        var message = $('#m').val();
+        var html =
+          '<span class="handle">' + username + '</span> ' + message;
+        $('#messages').append($('<li>').html(html));
+        serverSocket.emit('message-to-server', {
+          username: username,
+          message: message
+        });
         $('#m').val('');
         return false;
       });
-      socket.on('chat message', function(msg){
-        $('#messages').append($('<li>').text(msg));
+      serverSocket.on('message-to-client', function(msg){
+        var message =
+          '<span class="handle">' + msg.username + '</span> ' + msg.message;
+        $('#messages').append($('<li>').html(message));
+      });
+      serverSocket.on('join', function(username) {
+        $('#messages').append($('<li class="join">')
+          .text(username + ' has joined.'));
+      });
+      serverSocket.on('leave', function(username) {
+        $('#messages').append($('<li class="leave">')
+          .text(username + ' has left.'));
+      });
+      $('#typing-indicator').hide();
+      serverSocket.on('start-type', function(username) {
+        $('#typing-indicator .username').text(username);
+        $('#typing-indicator').show();
+      });
+      serverSocket.on('end-type', function(username) {
+        $('#typing-indicator').hide();
       });
     </script>
   </body>
